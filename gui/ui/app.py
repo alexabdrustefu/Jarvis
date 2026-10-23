@@ -4,9 +4,10 @@ import customtkinter as ctk
 
 from interface.voice_input import VoiceInput
 from interface.voice_output import VoiceOutput
-from services import create_command_router
-from ui.chat_view import ChatView
-from ui.dashboard import DashboardView
+from composition import create_application
+from gui.ui.chat_view import ChatView
+from gui.ui.dashboard import DashboardView
+from gui.ui.local_tools_view import LocalToolsView
 
 
 class JarvisApp:
@@ -20,9 +21,14 @@ class JarvisApp:
     def __init__(self):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
-        self.router = create_command_router()
+        application = create_application()
+        self.router = application.router
         self.voice_input = VoiceInput()
         self.voice_output = VoiceOutput()
+        self.local_store = application.store
+        preferences = self.local_store.get_preferences()
+        self.voice_output.voice = preferences.get("voice", self.voice_output.voice)
+        self.voice_output.rate = preferences.get("speech_rate", "+0%")
         self._page_views = {}
         self._active_page = None
         self.root = ctk.CTk()
@@ -34,6 +40,7 @@ class JarvisApp:
         self._build_layout()
         self.show_chat()
         self._start_fade_in()
+        self._reminder_poll_id = self.root.after(1500, self._poll_reminders)
 
     def _build_layout(self) -> None:
         self.root.grid_columnconfigure(1, weight=1)
@@ -59,6 +66,7 @@ class JarvisApp:
         for label, callback in (
             ("◈   Centro di comando", self.show_dashboard),
             ("⌁   Interfaccia JARVIS", self.show_chat),
+            ("◷   Pianificazione", self.show_local_tools),
         ):
             button = ctk.CTkButton(
                 sidebar,
@@ -132,6 +140,15 @@ class JarvisApp:
     def _run_quick_action(self, command: str) -> None:
         self.show_chat(command)
 
+    def show_local_tools(self) -> None:
+        self._select_nav("◷   Pianificazione")
+        self._show("local_tools", lambda parent: LocalToolsView(
+            parent, self.local_store,
+            on_command=lambda command: self.show_chat(command),
+            microphone=self.voice_input.Microphone,
+            router=self.router,
+        ))
+
     def show_chat(self, initial_message: str | None = None) -> None:
         self._select_nav("⌁   Interfaccia JARVIS")
         chat = self._show(
@@ -144,8 +161,14 @@ class JarvisApp:
                 clear_history=self.router.ai.clear_history,
                 load_history=self.router.ai.memory.get_recent_messages_with_timestamps,
                 load_after=self.router.ai.memory.get_messages_after_id,
+                speak_enabled=self.local_store.get_preferences()["voice_replies"],
+                on_speak_toggle=lambda enabled: self.local_store.set_preference("voice_replies", enabled),
             )
         )
+        chat.set_speak_enabled(self.local_store.get_preferences()["voice_replies"])
+        preferences = self.local_store.get_preferences()
+        self.voice_output.voice = preferences.get("voice", self.voice_output.voice)
+        self.voice_output.rate = preferences.get("speech_rate", "+0%")
         if initial_message:
             chat.send_message(initial_message)
 
@@ -155,9 +178,32 @@ class JarvisApp:
     def close(self) -> None:
         # Stop repeating UI timers without waiting for in-flight network workers.
         for view in self._page_views.values():
+            if hasattr(view, "on_close"):
+                view.on_close()
             if hasattr(view, "on_hide"):
                 view.on_hide()
+        try:
+            self.root.after_cancel(self._reminder_poll_id)
+        except Exception:
+            pass
         self.root.destroy()
+
+    def _poll_reminders(self):
+        if not self.root.winfo_exists():
+            return
+        try:
+            for _ident, title, _when in self.local_store.take_due():
+                popup = ctk.CTkToplevel(self.root)
+                popup.title("Promemoria J.A.R.V.I.S.")
+                popup.geometry("390x160")
+                popup.attributes("-topmost", True)
+                ctk.CTkLabel(popup, text="PROMEMORIA", font=("Consolas", 12, "bold"),
+                             text_color=self.CYAN).pack(pady=(24, 6))
+                ctk.CTkLabel(popup, text=title, font=("Segoe UI", 16), wraplength=340).pack(padx=18, pady=6)
+                ctk.CTkButton(popup, text="OK", width=90, command=popup.destroy).pack(pady=9)
+        except Exception as error:
+            print(f"Notifica promemoria non riuscita: {error}")
+        self._reminder_poll_id = self.root.after(5000, self._poll_reminders)
 
     def _select_nav(self, selected: str) -> None:
         for label, button in self.nav_buttons.items():

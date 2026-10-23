@@ -47,7 +47,8 @@ class ChatView(ctk.CTkFrame):
     GOLD = "#EAB45A"
 
     def __init__(self, master, handle_message, listen=None, speak=None,
-                 clear_history=None, load_history=None, load_after=None):
+                 clear_history=None, load_history=None, load_after=None, speak_enabled=False,
+                 on_speak_toggle=None):
         super().__init__(master, fg_color="transparent")
         self.handle_message = handle_message
         self.listen = listen
@@ -55,6 +56,7 @@ class ChatView(ctk.CTkFrame):
         self.clear_history_callback = clear_history
         self.load_history_callback = load_history
         self.load_after_callback = load_after
+        self.on_speak_toggle = on_speak_toggle
         self._results = Queue()
         self._busy = False
         self._message_row = 0
@@ -62,7 +64,7 @@ class ChatView(ctk.CTkFrame):
         self._pending_echoes = Counter()
         self._indicator = None
         self._scroll_job = None
-        self._speak_enabled = BooleanVar(master=self, value=False)
+        self._speak_enabled = BooleanVar(master=self, value=bool(speak_enabled))
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
 
@@ -81,6 +83,7 @@ class ChatView(ctk.CTkFrame):
         controls.grid(row=0, column=1, rowspan=2, sticky="e")
         self.speak_switch = ctk.CTkSwitch(
             controls, text="LEGGI RISPOSTE", variable=self._speak_enabled,
+            command=self._save_speak_preference,
             font=("Consolas", 9), text_color=self.MUTED,
             progress_color="#0E7490", state="normal" if self.speak else "disabled",
         )
@@ -143,6 +146,13 @@ class ChatView(ctk.CTkFrame):
         self.bind("<Map>", self._on_chat_mapped, add="+")
         self.after(900, self._sync_external_history)
         self.entry.focus()
+
+    def _save_speak_preference(self):
+        if self.on_speak_toggle:
+            self.on_speak_toggle(bool(self._speak_enabled.get()))
+
+    def set_speak_enabled(self, enabled):
+        self._speak_enabled.set(bool(enabled))
 
     def _restore_history(self):
         history = self.load_history_callback() if self.load_history_callback else []
