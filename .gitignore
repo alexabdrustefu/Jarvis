@@ -1,0 +1,8 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+src/client_secret.json
+src/token.json
+src/storage/jarvis.db
+src/interface/temp_voice.mp3

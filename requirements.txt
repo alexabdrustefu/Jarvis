@@ -1,0 +1,15 @@
+python-dotenv
+groq
+SpeechRecognition
+PyAudio
+edge-tts
+playsound==1.2.2
+feedparser
+pycaw
+comtypes
+google-auth
+google-auth-httplib2
+google-auth-oauthlib
+google-api-python-client
+httplib2
+customtkinter
