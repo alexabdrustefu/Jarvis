@@ -1,0 +1,127 @@
+name: Windows release
+
+on:
+  push:
+    branches:
+      - develop
+      - "feature/**"
+      - "fix/**"
+      - "chore/**"
+    tags:
+      - "v*"
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-package-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
+
+      - name: Install application and packaging dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+
+      - name: Build desktop application
+        shell: pwsh
+        run: |
+          python -m PyInstaller `
+            --noconfirm `
+            --clean `
+            --onedir `
+            --windowed `
+            --name JARVIS `
+            --paths src `
+            --collect-all customtkinter `
+            --collect-all googleapiclient `
+            --collect-all google_auth_oauthlib `
+            --collect-all edge_tts `
+            --collect-all speech_recognition `
+            --collect-all groq `
+            --collect-all pycaw `
+            --collect-all comtypes `
+            gui/main.py
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path "dist/JARVIS/JARVIS.exe")) { throw "PyInstaller did not create JARVIS.exe" }
+
+      - name: Install Inno Setup
+        run: choco install innosetup --yes --no-progress
+
+      - name: Create Windows installer and portable archive
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_TYPE -eq "tag") {
+            $version = $env:GITHUB_REF_NAME.TrimStart("v")
+          } else {
+            $version = "0.1.0.$($env:GITHUB_RUN_NUMBER)"
+          }
+          $compiler = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $compiler)) { throw "Inno Setup compiler not found: $compiler" }
+          & $compiler "/DAppVersion=$version" "installer/JARVIS.iss"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          Copy-Item ".env.example" "dist/JARVIS/config.example.env"
+          New-Item -ItemType Directory -Force -Path "dist/JARVIS/docs" | Out-Null
+          Copy-Item "README.md", "INSTALLAZIONE.md", "LICENSE" "dist/JARVIS/docs/"
+          Compress-Archive -Path "dist/JARVIS/*" -DestinationPath "dist/JARVIS-Portable-$version.zip" -CompressionLevel Optimal
+          $releaseFiles = @(Get-Item "dist/JARVIS-Setup-$version.exe", "dist/JARVIS-Portable-$version.zip")
+          $hashLines = $releaseFiles | ForEach-Object {
+            "$(Get-FileHash $_.FullName -Algorithm SHA256 | Select-Object -ExpandProperty Hash)  $($_.Name)"
+          }
+          Set-Content -Path "dist/SHA256SUMS.txt" -Value $hashLines -Encoding ascii
+          "JARVIS_VERSION=$version" >> $env:GITHUB_ENV
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS-Windows-${{ github.run_number }}
+          path: |
+            dist/JARVIS-Setup-*.exe
+            dist/JARVIS-Portable-*.zip
+            dist/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: JARVIS-Windows-${{ github.run_number }}
+          path: dist
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh
+        run: |
+          gh release create "${{ github.ref_name }}" `
+            "dist/JARVIS-Setup-$($env:GITHUB_REF_NAME.TrimStart('v')).exe" `
+            "dist/JARVIS-Portable-$($env:GITHUB_REF_NAME.TrimStart('v')).zip" `
+            "dist/SHA256SUMS.txt" `
+            --title "J.A.R.V.I.S. ${{ github.ref_name }}" `
+            --generate-notes
