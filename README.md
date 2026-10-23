@@ -2,9 +2,19 @@
 
 [Italiano](README.md) | [English](README_EN.md)
 
+[![CI](https://github.com/alexabdrustefu/Jarvis/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/alexabdrustefu/Jarvis/actions/workflows/tests.yml)
+[![Latest release](https://img.shields.io/github/v/release/alexabdrustefu/Jarvis)](https://github.com/alexabdrustefu/Jarvis/releases/latest)
+[![License](https://img.shields.io/github/license/alexabdrustefu/Jarvis)](LICENSE)
+
 Assistente personale per Windows, realizzato in Python. J.A.R.V.I.S. combina una GUI desktop con una chat testuale e una dashboard animata, un'interfaccia vocale da terminale, servizi per meteo e notizie, comandi Windows e memoria locale.
 
 > Il progetto è un prototipo personale ispirato all'interfaccia di Iron Man. Non è un prodotto ufficiale Marvel o Disney.
+
+![Anteprima illustrativa della chat desktop J.A.R.V.I.S.](docs/media/jarvis-preview.svg)
+
+**Scarica per Windows:** [installer e archivio portatile nelle release](https://github.com/alexabdrustefu/Jarvis/releases/latest). La chat AI locale richiede [Ollama](https://ollama.com/download) e il modello `qwen3:4b`; il resto dell'app si avvia senza una chiave cloud.
+
+Vuoi solo vedere l'interfaccia? Avvia `python .\gui\main.py --demo` per una [demo guidata offline](docs/DEMO.md), senza chiavi, account, microfono o chiamate di rete.
 
 ## Funzionalità
 
@@ -41,6 +51,8 @@ Avvia la GUI:
 ```powershell
 python .\gui\main.py
 ```
+
+Per installare senza configurare Python, scarica `JARVIS-Setup-*.exe` dalla [pagina Releases](https://github.com/alexabdrustefu/Jarvis/releases/latest). Preferenze, memoria e token Gmail dell'installer vengono salvati in `%LOCALAPPDATA%\JARVIS`, fuori dalla cartella del programma.
 
 La selezione automatica usa Ollama per richieste normali e dati personali; per richieste complesse prova LM Studio locale, poi ripiega su Ollama. Dalla sezione **Pianificazione** puoi scegliere **Automatico**, **Ollama**, **LM Studio** o, solo se vuoi usare un servizio cloud, **Groq facoltativo**. Per Groq imposta `GROQ_API_KEY` nel file `.env`.
 
@@ -140,6 +152,10 @@ Jarvis/
 - [Funzionamento e comandi](FUNZIONAMENTO.md)
 - [Architettura e infrastruttura](ARCHITETTURA.md)
 - [English README](README_EN.md)
+- [Changelog](CHANGELOG.md)
+- [Demo guidata](docs/DEMO.md)
+- [Roadmap](ROADMAP.md)
+- [Contribuire](CONTRIBUTING.md)
 
 ## Licenza
 

@@ -3,11 +3,9 @@ import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 
-DEFAULT_DB = (
-    Path(__file__).resolve().parent.parent
-    / "storage"
-    / "jarvis.db"
-)
+from storage.paths import data_directory
+
+DEFAULT_DB = data_directory() / "jarvis.db"
 
 
 class LongTermMemory:

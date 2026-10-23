@@ -6,6 +6,7 @@ import html
 import os
 import re
 import threading
+from pathlib import Path
 from email.header import decode_header, make_header
 from email.mime.text import MIMEText
 from email.utils import parseaddr
@@ -16,6 +17,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_httplib2 import AuthorizedHttp
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from storage.paths import data_directory, is_frozen
 
 
 SCOPES = [
@@ -28,9 +30,9 @@ class EmailActions:
     """Read Gmail messages and send replies in their original thread."""
 
     def __init__(self):
-        self.base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        self.client_secret_path = os.path.join(self.base_dir, "client_secret.json")
-        self.token_path = os.path.join(self.base_dir, "token.json")
+        self.base_dir = data_directory() if is_frozen() else Path(__file__).resolve().parents[1]
+        self.client_secret_path = str(self.base_dir / "client_secret.json")
+        self.token_path = str(self.base_dir / "token.json")
         self.service = None
         # google-api-python-client's httplib2 transport is not thread-safe.
         # The desktop UI requests message details on background workers.
