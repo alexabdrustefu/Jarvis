@@ -9,12 +9,9 @@ from datetime import date
 from pathlib import Path
 
 from api.domain.telemetry import RequestMetric
+from storage.paths import data_directory
 
-
-DEFAULT_TELEMETRY_DB = (
-    Path(__file__).resolve().parents[2]
-    / "src" / "storage" / "api_telemetry.db"
-)
+DEFAULT_TELEMETRY_DB = data_directory() / "api_telemetry.db"
 
 
 class SqliteTelemetryRepository:

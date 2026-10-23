@@ -1,8 +1,6 @@
 import re
 import os
 import json
-from pathlib import Path
-
 from dotenv import load_dotenv
 from groq import Groq
 
@@ -11,10 +9,9 @@ from memory.facts_memory import FactsMemory
 from core.prompt_budget import compact_facts, compact_history
 from core.text import normalize_text
 from ai.providers import LMStudioProvider, OllamaProvider, ProviderError, choose_provider, needs_complex_provider
+from storage.paths import environment_file
 
-
-PROJECT_ENV = Path(__file__).resolve().parents[2] / ".env"
-load_dotenv(PROJECT_ENV)
+load_dotenv(environment_file())
 
 
 class LLMClient:
