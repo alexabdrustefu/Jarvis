@@ -16,13 +16,14 @@ Per il set di branch preparato in questo repository, l'ordine e: `feature/core-a
 
 ## Controlli
 
-La GitHub Action `Tests` installa le dipendenze su Windows/Python 3.12 ed esegue la suite offline con `unittest`. Le pull request verso `develop` e `main` avviano il controllo; i push su `develop` lo avviano di nuovo.
+La GitHub Action `Tests` installa le dipendenze su Windows/Python 3.12, esegue Ruff e la suite offline con `unittest`. Le pull request verso `develop` e `main` avviano il controllo; i push su `develop` e `main` lo avviano di nuovo. La configurazione lint è in `ruff.toml`, le dipendenze di sviluppo in `requirements-dev.txt`.
 
 Prima di aprire una pull request, esegui localmente:
 
 ```powershell
 $env:PYTHONPATH = "$PWD\src;$PWD"
 python -m unittest discover -s tests -v
+ruff check api gui src tests
 ```
 
 ## Dati e segreti

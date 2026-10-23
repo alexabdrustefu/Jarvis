@@ -33,6 +33,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
+
+      - name: Lint with Ruff
+        run: ruff check api gui src tests
 
       - name: Run offline tests
         shell: pwsh
