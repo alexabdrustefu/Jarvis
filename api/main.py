@@ -11,11 +11,10 @@ for import_root in (SRC_ROOT, ROOT):
     if str(import_root) not in sys.path:
         sys.path.insert(0, str(import_root))
 
-from api.bootstrap import create_local_bridge
-from composition import create_application
-
-
 def main():
+    from api.bootstrap import create_local_bridge
+    from composition import create_application
+
     parser = argparse.ArgumentParser(description="J.A.R.V.I.S. loopback chat API")
     parser.add_argument("--http-port", type=int, default=8765)
     parser.add_argument("--socket-port", type=int, default=8766)
