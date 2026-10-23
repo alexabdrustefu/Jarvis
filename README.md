@@ -141,6 +141,10 @@ Jarvis/
 - [Architettura e infrastruttura](ARCHITETTURA.md)
 - [English README](README_EN.md)
 
+## Licenza
+
+Questo progetto è distribuito con licenza [MIT](LICENSE). L'ispirazione a Iron Man riguarda solo l'interfaccia: J.A.R.V.I.S. non è affiliato né approvato da Marvel o Disney.
+
 ## Test e limiti
 
 Esegui la suite automatica dalla radice del repository:

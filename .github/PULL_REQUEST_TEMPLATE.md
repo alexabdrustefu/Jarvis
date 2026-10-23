@@ -1,18 +1,27 @@
-## Scopo
+## Summary
 
-<!-- Descrivi in breve il risultato atteso. -->
+<!-- Describe the change and why it is needed. -->
 
-## Modifiche
+## Change type
 
-- 
+- [ ] Feature
+- [ ] Bug fix
+- [ ] Documentation
+- [ ] Refactor or maintenance
 
-## Verifica
+## Verification
 
-- [ ] Test automatici eseguiti o motivazione se non applicabili
-- [ ] Nessun segreto, token o dato locale incluso
-- [ ] Documentazione aggiornata se cambia il comportamento
+- [ ] `ruff check api gui src tests`
+- [ ] `python -m unittest discover -s tests -v`
+- [ ] Manual verification (describe below, if applicable)
 
-## Destinazione
+## Checklist
 
-- [ ] Feature/fix verso `develop`
-- [ ] Promozione verificata da `develop` verso `main`
+- [ ] This PR targets `develop` (or `main` for a release from `develop`).
+- [ ] Documentation and configuration examples are updated where needed.
+- [ ] No credentials, personal data, local databases, or generated files are included.
+- [ ] Any user-visible or security-relevant behavior is described above.
+
+## Manual verification
+
+<!-- Include steps or write "Not applicable". -->

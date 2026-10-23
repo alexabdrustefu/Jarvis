@@ -113,6 +113,10 @@ Jarvis/
 - [Architecture and infrastructure](ARCHITETTURA.md)
 - [README in italiano](README.md)
 
+## License
+
+This project is distributed under the [MIT License](LICENSE). The Iron Man reference is only an interface inspiration; J.A.R.V.I.S. is not affiliated with or endorsed by Marvel or Disney.
+
 ## Tests and limitations
 
 Run the automated suite from the repository root:

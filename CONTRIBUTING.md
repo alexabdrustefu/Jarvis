@@ -14,6 +14,10 @@ Non fare push diretti su `main` o `develop`. Non riscrivere la storia condivisa 
 
 Per il set di branch preparato in questo repository, l'ordine e: `feature/core-ai-productivity` → `feature/news-rss-resilience` → `feature/api-ddd-telemetry` → `feature/desktop-gui` → `chore/docs-ci`. Apri ogni PR verso `develop` solo dopo aver integrato la precedente: i branch successivi includono i prerequisiti dei precedenti.
 
+## Commit e pull request
+
+Mantieni i commit piccoli e concentrati su un solo cambiamento. Usa messaggi leggibili, per esempio `feat(gui): add keyboard shortcut` o `fix(api): validate reminder input`. Evita commit che mescolano modifiche indipendenti. Compila il [template della pull request](.github/PULL_REQUEST_TEMPLATE.md) e indica sempre come hai verificato il cambiamento.
+
 ## Controlli
 
 La GitHub Action `Tests` installa le dipendenze su Windows/Python 3.12, esegue Ruff e la suite offline con `unittest`. Le pull request verso `develop` e `main` avviano il controllo; i push su `develop` e `main` lo avviano di nuovo. La configurazione lint è in `ruff.toml`, le dipendenze di sviluppo in `requirements-dev.txt`.
