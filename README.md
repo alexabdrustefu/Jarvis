@@ -8,8 +8,13 @@ Assistente personale per Windows, realizzato in Python. J.A.R.V.I.S. combina una
 
 ## Funzionalità
 
-- Chat in italiano con Groq e modello `openai/gpt-oss-20b`.
+- Chat gratuita e locale con Ollama (`qwen3:4b`) oppure LM Studio; Groq è facoltativo.
+- Scelta automatica del provider: richieste semplici e personali usano Ollama; quelle complesse provano LM Studio locale se attivo. La modalità automatica non invia messaggi ai servizi cloud.
+- API HTTP e socket TCP locali per integrare un client web, senza framework o servizi a pagamento.
 - Memoria di conversazioni e fatti personali in SQLite.
+- Promemoria e attività locali con scadenze, notifiche desktop e comandi in italiano.
+- Routine configurabili con azioni consentite e conferma prima dell'esecuzione.
+- Preferenze locali per voce, velocità di lettura e città meteo; diagnostica per API key, microfono e rete.
 - Interfaccia desktop CustomTkinter con dashboard HUD, chat persistente, dettatura vocale e lettura vocale facoltativa.
 - Assistente vocale da terminale con riconoscimento Google Speech e sintesi Edge TTS.
 - Meteo attuale e previsioni tramite Open-Meteo, con geolocalizzazione IP facoltativa.
@@ -20,7 +25,7 @@ La GUI **non include una sezione dedicata alla posta**. L'accesso alle email avv
 
 ## Avvio rapido su Windows
 
-Prerequisiti: Python 3.10 o superiore, connessione Internet e una chiave API Groq. Microfono e uscita audio servono per le funzioni vocali.
+Prerequisiti: Python 3.10 o superiore. Per la chat gratuita installa Ollama da [ollama.com/download](https://ollama.com/download) e scarica il modello con `ollama pull qwen3:4b`. La chat locale non richiede chiavi, account o pagamenti. Le funzioni meteo, notizie e voce possono richiedere Internet; Groq è facoltativo e soggetto ai limiti del piano gratuito.
 
 Dalla cartella principale del repository, in PowerShell:
 
@@ -29,14 +34,28 @@ py -3 -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-Copy-Item .env.example .env
-notepad .env
 ```
 
-Imposta `GROQ_API_KEY` nel file `.env`, quindi avvia la GUI:
+Avvia la GUI:
 
 ```powershell
-python .\JarvisGUI\main.py
+python .\gui\main.py
+```
+
+La selezione automatica usa Ollama per richieste normali e dati personali; per richieste complesse prova LM Studio locale, poi ripiega su Ollama. Dalla sezione **Pianificazione** puoi scegliere **Automatico**, **Ollama**, **LM Studio** o, solo se vuoi usare un servizio cloud, **Groq facoltativo**. Per Groq imposta `GROQ_API_KEY` nel file `.env`.
+
+Per abilitare API HTTP e socket dalla GUI, apri **Pianificazione** e seleziona **Avvia bridge per web**. Da terminale:
+
+```powershell
+python .\api\main.py
+```
+
+HTTP: `POST http://127.0.0.1:8765/api/chat` con JSON `{"message":"Ciao"}`; stato: `GET /health`. Per un client web usa WebSocket `ws://127.0.0.1:8765/ws`, inviando e ricevendo oggetti JSON `{ "message": "..." }` e `{ "reply": "..." }`. È disponibile anche socket TCP JSON su `127.0.0.1:8766`, una richiesta per riga. I listener sono locali al PC.
+
+```javascript
+const chat = new WebSocket("ws://127.0.0.1:8765/ws");
+chat.onopen = () => chat.send(JSON.stringify({ message: "Ciao" }));
+chat.onmessage = (event) => console.log(JSON.parse(event.data).reply);
 ```
 
 Per avviare l'assistente vocale da terminale:
@@ -58,6 +77,10 @@ La guida completa per le dipendenze, Groq, Gmail OAuth, avvio e problemi comuni 
 - `Alza il volume` oppure `Imposta il volume al 40`
 - `Ricordati che il mio colore preferito è blu`
 - `Cosa ti ricordi di me?`
+- `Ricordami di comprare il latte domani alle 9`, `mostra promemoria`, `completa 2`.
+- Crea una routine dalla sezione **Pianificazione** e avviala dicendo `avvia modalità lavoro`; conferma con `sì`.
+
+Promemoria, routine e preferenze usano SQLite e non richiedono account o dipendenze aggiuntive. Gli avvisi desktop vengono mostrati mentre la GUI è aperta; il terminale vocale legge le scadenze al successivo ciclo di ascolto. Le funzioni già esistenti che usano AI, meteo, riconoscimento vocale o sintesi online mantengono i propri requisiti di rete e configurazione.
 
 La GUI apre sulla chat. `Ctrl+Invio` invia un messaggio; la dashboard contiene scorciatoie per le azioni principali. I comandi vocali e quelli inviati dalla GUI condividono il router e la cronologia.
 
@@ -73,22 +96,26 @@ Non inserire mai `.env`, `src/client_secret.json`, `src/token.json` o il databas
 flowchart LR
     GUI[GUI: dashboard e chat] --> Router[CommandRouter]
     Voice[Voce da terminale] --> Router
-    Router --> AI[Groq e memoria]
+    Router --> AI[Ollama e LM Studio locali o Groq facoltativo]
+    HTTP[API HTTP] --> Router
+    Socket[Socket TCP JSON] --> Router
     Router --> Actions[Azioni: meteo, news, Gmail, Windows]
     AI --> DB[(SQLite locale)]
     Actions --> APIs[Servizi web e API esterne]
 ```
 
-La GUI e l'assistente vocale condividono i servizi in `src`. La memoria è locale; i servizi AI, meteo, notizie, riconoscimento vocale e Gmail richiedono Internet. La descrizione dei moduli e dei flussi è in [ARCHITETTURA.md](ARCHITETTURA.md).
+GUI, voce, API HTTP/WebSocket e socket TCP condividono router, servizi e memoria tramite `src/composition.py`. Con Ollama le richieste AI restano sul PC; Groq e altri servizi online richiedono Internet. Dettagli in [ARCHITETTURA.md](ARCHITETTURA.md).
 
 ## Struttura del repository
 
 ```text
 Jarvis/
-├── JarvisGUI/             # Entry point e interfaccia desktop
+├── gui/                   # GUI desktop: viste e interazione
+├── api/                   # Adattatori HTTP, WebSocket e socket TCP
 ├── src/
+│   ├── composition.py     # Composizione condivisa e dependency injection
 │   ├── actions/           # Gmail, meteo, notizie, sistema e volume
-│   ├── ai/                # Client Groq
+│   ├── ai/                # Provider Ollama/LM Studio/Groq e memoria AI
 │   ├── core/              # Router, testo e logica meteo
 │   ├── interface/         # Microfono e sintesi vocale
 │   ├── memory/            # Persistenza SQLite
@@ -101,7 +128,7 @@ Jarvis/
 
 ## Privacy e sicurezza
 
-- Il testo delle richieste AI viene inviato a Groq.
+- Con Ollama messaggi, cronologia e fatti restano sul PC. Groq riceve solo il prompt di sistema e il messaggio corrente, senza cronologia o fatti salvati.
 - L'audio dettato viene inviato a Google Speech Recognition; la sintesi Edge TTS richiede rete.
 - Le richieste meteo, notizie e Gmail contattano i rispettivi servizi esterni.
 - La cronologia e i fatti vengono salvati localmente in `src/storage/jarvis.db`.
@@ -116,4 +143,14 @@ Jarvis/
 
 ## Test e limiti
 
-Il progetto è pensato principalmente per Windows; il controllo del volume usa componenti specifici di Windows. `src/test_core.py` è un'interfaccia testuale interattiva. `src/test_ai.py` contatta Groq e non è un test offline.
+Esegui la suite automatica dalla radice del repository:
+
+```powershell
+python -m unittest discover -s tests -t . -p "test_*.py" -v
+```
+
+I test automatici sono raccolti in `tests/`. `tests/test_ai.py` contatta Groq solo se eseguito direttamente; `tests/manual_memory_console.py` avvia la chat testuale interattiva.
+
+I test automatici usano dipendenze simulate e database temporanei. `tests/test_ai.py` è un controllo manuale live che contatta Groq solo se lanciato direttamente.
+
+Il progetto è pensato principalmente per Windows; il controllo del volume usa componenti specifici di Windows. `tests/manual_memory_console.py` è un'interfaccia testuale interattiva. `tests/test_ai.py` contatta Groq e non è un test offline.

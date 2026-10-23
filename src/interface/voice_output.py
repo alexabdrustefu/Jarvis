@@ -1,23 +1,34 @@
 import os
 import asyncio
 import tempfile
-import edge_tts
-from playsound import playsound
+try:
+    import edge_tts
+except ImportError:
+    edge_tts = None
+try:
+    from playsound import playsound
+except ImportError:
+    playsound = None
 
 class VoiceOutput:
     """Riproduce la voce usando le voci neurali gratuite di Microsoft Edge (Edge-TTS)."""
 
-    def __init__(self):
+    def __init__(self, voice="it-IT-IsabellaNeural", rate="+0%"):
         # Voce neurale femminile italiana calda e naturale
-        self.voice = "it-IT-IsabellaNeural"  # In alternativa puoi provare "it-IT-IsabellaNeural"
+        self.voice = voice
+        self.rate = rate
 
     async def _generate_audio(self, text: str, output_file: str):
-        communicate = edge_tts.Communicate(text, self.voice)
+        if edge_tts is None:
+            raise RuntimeError("edge-tts non è installato.")
+        communicate = edge_tts.Communicate(text, self.voice, rate=self.rate)
         await communicate.save(output_file)
 
     def speak(self, text: str):
         if not text or not text.strip():
             return
+        if edge_tts is None or playsound is None:
+            raise RuntimeError("Per la sintesi vocale installa edge-tts e playsound.")
 
         print(f"JARVIS: {text}")
         audio_file = None

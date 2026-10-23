@@ -1,0 +1,36 @@
+import unittest
+
+from composition import create_application
+
+
+class FakeStore:
+    def get_preferences(self):
+        return {"llm_provider": "lmstudio"}
+
+
+class FakeAI:
+    provider_preference = "auto"
+
+
+class CompositionTests(unittest.TestCase):
+    def test_all_interfaces_receive_one_shared_router_and_store(self):
+        store = FakeStore()
+        ai = FakeAI()
+        email, news, system, audio = object(), object(), object(), object()
+
+        application = create_application(
+            store=store, ai=ai, email=email, news=news, system=system, audio=audio,
+        )
+
+        self.assertIs(application.store, store)
+        self.assertIs(application.router.local_commands.store, store)
+        self.assertIs(application.router.ai, ai)
+        self.assertIs(application.router.email, email)
+        self.assertIs(application.router.news, news)
+        self.assertIs(application.router.system, system)
+        self.assertIs(application.router.audio, audio)
+        self.assertEqual(ai.provider_preference, "lmstudio")
+
+
+if __name__ == "__main__":
+    unittest.main()

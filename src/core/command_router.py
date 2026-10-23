@@ -1,21 +1,25 @@
 """Routes recognized requests to the appropriate JARVIS service."""
 
 import re
+import threading
 
 from core.text import normalize_text
 from core.weather import extract_weather_city, interpret_weather_date
 from actions.system_actions_audio import is_volume_command
+from core.local_features import LocalCommandService
 
 
 class CommandRouter:
-    def __init__(self, ai, email, news, system, audio):
+    def __init__(self, ai, email, news, system, audio, local_commands=None):
         self.ai = ai
         self.email = email
         self.news = news
         self.system = system
         self.audio = audio
+        self.local_commands = local_commands or LocalCommandService()
         self._awaiting_weather_date = False
         self._pending_weather_city = None
+        self._lock = threading.RLock()
 
     def _record_action(self, user_message: str, response: str) -> str:
         """Persist deterministic actions so both interfaces share one history."""
@@ -26,15 +30,25 @@ class CommandRouter:
         return response
 
     def handle(self, text: str) -> str:
+        # The desktop UI, HTTP bridge and TCP bridge can share this router.
+        with self._lock:
+            return self._handle(text)
+
+    def _handle(self, text: str) -> str:
         normalized = normalize_text(text)
+
+        local_response = self.local_commands.handle(text, self)
+        if local_response is not None:
+            return self._record_action(text, local_response)
 
         if normalized in {"aiuto", "help", "comandi", "cosa sai fare", "cosa puoi fare"}:
             return self._record_action(text, (
-                "Posso rispondere alle tue domande, ricordare informazioni, "
+                "Posso rispondere alle tue domande, salvare promemoria e attività locali, "
                 "leggere le email non lette, riassumere le notizie, consultare il meteo, "
                 "dirti data e ora, aprire siti o programmi e regolare il volume. "
                 "Prova: meteo oggi, leggi le email, dimmi le notizie, "
-                "apri calcolatrice oppure alza il volume."
+                "avvia routine, completa promemoria 2, apri calcolatrice oppure alza il volume. "
+                "Per aggiungere: ricordami di comprare il latte domani alle 9."
             ))
 
         if self._awaiting_weather_date:
@@ -77,7 +91,10 @@ class CommandRouter:
             return self._record_action(
                 text,
                 self.system.get_weather_for_date(
-                    requested_date, extract_weather_city(normalized)
+                    requested_date,
+                    extract_weather_city(normalized)
+                    or self.local_commands.store.get_preferences().get("location")
+                    or None,
                 ),
             )
 

@@ -1,4 +1,5 @@
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 DEFAULT_DB = (
@@ -22,8 +23,17 @@ class FactsMemory:
     def _connect(self):
         return sqlite3.connect(self.db_path)
 
+    @contextmanager
+    def _connection(self):
+        connection = self._connect()
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+
     def _initialize(self):
-        with self._connect() as connection:
+        with self._connection() as connection:
             connection.execute("""
                 CREATE TABLE IF NOT EXISTS facts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,7 +53,7 @@ class FactsMemory:
                 "La chiave e il valore non possono essere vuoti."
             )
 
-        with self._connect() as connection:
+        with self._connection() as connection:
             connection.execute(
                 """
                 INSERT INTO facts (fact_key, fact_value)
@@ -59,7 +69,7 @@ class FactsMemory:
             )
 
     def get(self, key: str):
-        with self._connect() as connection:
+        with self._connection() as connection:
             row = connection.execute(
                 "SELECT fact_value FROM facts WHERE fact_key = ?",
                 (key.strip(),),
@@ -68,7 +78,7 @@ class FactsMemory:
         return row[0] if row else None
 
     def get_all(self):
-        with self._connect() as connection:
+        with self._connection() as connection:
             rows = connection.execute(
                 """
                 SELECT fact_key, fact_value
@@ -80,7 +90,7 @@ class FactsMemory:
         return dict(rows)
 
     def forget(self, key: str):
-        with self._connect() as connection:
+        with self._connection() as connection:
             cursor = connection.execute(
                 "DELETE FROM facts WHERE fact_key = ?",
                 (key.strip(),),

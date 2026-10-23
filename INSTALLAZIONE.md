@@ -7,7 +7,7 @@ Questa guida descrive l'installazione su Windows dalla cartella principale del r
 - Windows 10 o 11.
 - Python 3.10 o superiore e Python Launcher (py). Le funzioni audio e il controllo del volume dipendono da componenti Windows e possono richiedere pacchetti compatibili con la versione di Python installata.
 - Connessione Internet.
-- Una chiave API Groq per la chat e le richieste AI.
+- Ollama per la chat AI gratuita e locale. Groq è facoltativo.
 - Microfono e altoparlanti/cuffie per le funzioni vocali.
 - Facoltativamente, un progetto Google Cloud con Gmail API e credenziali OAuth desktop per i comandi email.
 
@@ -31,7 +31,22 @@ Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
 
 Puoi anche evitare l'attivazione e usare direttamente **.venv\Scripts\python.exe** al posto di **python**.
 
-## Chiave Groq
+## Modello locale gratuito
+
+Installa Ollama dal sito ufficiale [ollama.com/download](https://ollama.com/download), quindi apri PowerShell:
+
+~~~powershell
+ollama pull qwen3:4b
+ollama run qwen3:4b
+~~~
+
+Il modello viene scaricato sul PC e le richieste successive sono elaborate localmente, senza chiavi o costo per chiamata. RAM e spazio disco richiesti dipendono dal modello scelto.
+
+### LM Studio locale facoltativo
+
+Installa [LM Studio](https://lmstudio.ai/) e scarica un modello compatibile con il tuo PC. Nella scheda **Developer** avvia il server locale sulla porta predefinita 1234 e carica un modello. J.A.R.V.I.S. lo rileva per le richieste più complesse. Non è richiesto un account o un servizio a pagamento per l'inferenza locale. Per scegliere un modello specifico, imposta `LM_STUDIO_MODEL` nel file `.env` usando l'identificatore restituito da `/v1/models`.
+
+## Provider Groq facoltativo
 
 Crea il file locale .env partendo dal modello:
 
@@ -46,7 +61,7 @@ Imposta la variabile senza virgolette o spazi aggiuntivi:
 GROQ_API_KEY=la_tua_chiave_groq
 ~~~
 
-Il client usa il modello **openai/gpt-oss-20b** tramite Groq. Non pubblicare .env e non inserire la chiave in un commit.
+In modalità **Automatico**, JARVIS usa Ollama per richieste normali o personali e LM Studio per richieste complesse se il server locale è attivo; altrimenti resta su Ollama. Automatico non invia messaggi ai servizi cloud. Groq viene usato solo se lo selezioni esplicitamente dalle preferenze GUI. Le quote gratuite dei servizi ospitati possono cambiare. Non pubblicare `.env`.
 
 ## Gmail facoltativo
 
@@ -64,7 +79,7 @@ Le credenziali OAuth sono facoltative; senza di esse le altre funzioni continuan
 Dalla radice del repository, con l'ambiente virtuale attivo, avvia la GUI desktop:
 
 ~~~powershell
-python .\JarvisGUI\main.py
+python .\gui\main.py
 ~~~
 
 Avvia l'assistente vocale da terminale:
@@ -76,10 +91,25 @@ python .\src\main.py
 Avvia l'interfaccia testuale interattiva:
 
 ~~~powershell
-python .\src\test_core.py
+python .\tests\manual_memory_console.py
 ~~~
 
 Nella GUI la chat è la schermata iniziale. Ctrl+Invio invia il messaggio; il pulsante PARLA attiva la dettatura e LEGGI RISPOSTE abilita la sintesi vocale. La dashboard offre scorciatoie per meteo, notizie e informazioni di sistema. Pronuncia “esci” per terminare la sessione vocale; nell'interfaccia testuale usa /exit.
+
+## API HTTP e socket per un client web
+
+Dalla GUI apri **Pianificazione** e avvia il bridge locale, oppure esegui:
+
+~~~powershell
+python .\api\main.py
+~~~
+
+- `GET http://127.0.0.1:8765/health` restituisce lo stato.
+- `POST http://127.0.0.1:8765/api/chat` riceve `{"message":"Ciao"}` e restituisce `{"reply":"..."}`.
+- WebSocket `ws://127.0.0.1:8765/ws` scambia gli stessi oggetti JSON ed è pronto per un client JavaScript nel browser.
+- `127.0.0.1:8766` accetta JSON delimitato da newline, una richiesta per riga.
+
+Il bridge usa solo la libreria standard Python ed è raggiungibile dal PC locale.
 
 ## Comandi di esempio
 
@@ -95,17 +125,17 @@ Nella GUI la chat è la schermata iniziale. Ctrl+Invio invia il messaggio; il pu
 
 ## Verifiche e test
 
-Il test automatizzato disponibile riguarda il riconoscimento dei comandi e la regolazione del volume. Dalla cartella principale:
+I test automatici non richiedono rete e usano memoria SQLite temporanea. Dalla cartella principale:
 
 ~~~powershell
-python -m unittest discover -s src -p "test_system_actions_audio.py" -v
+python -m unittest discover -s tests -t . -p "test_*.py" -v
 ~~~
 
-src/test_core.py è un'interfaccia interattiva. src/test_ai.py contatta Groq: non è un test offline e può consumare richieste API.
+tests/manual_memory_console.py è un'interfaccia interattiva. tests/test_ai.py è un controllo manuale live: eseguito direttamente contatta Groq e può consumare richieste API; l'importazione durante la discovery è sicura e non invia richieste.
 
 ## Problemi comuni
 
-- **GROQ_API_KEY non trovata**: verifica che .env sia nella cartella principale e che il nome della variabile sia esattamente GROQ_API_KEY.
+- **Ollama non disponibile**: avvia Ollama, verifica `ollama list` e scarica il modello con `ollama pull qwen3:4b`.
 - **Problemi con PyAudio o il microfono**: controlla il dispositivo audio predefinito e la compatibilità della versione di PyAudio con Python e Windows.
 - **Errore OAuth o credenziali mancanti**: controlla src/client_secret.json, l'abilitazione di Gmail API e lo stato del consenso OAuth.
 - **Problemi SSL con Google**: verifica proxy, VPN o antivirus con ispezione HTTPS. J.A.R.V.I.S. non disabilita la verifica TLS.

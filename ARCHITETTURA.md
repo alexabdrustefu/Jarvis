@@ -1,88 +1,91 @@
 # Architettura e infrastruttura
 
-## Panoramica
+## Tre contesti, un solo core
 
-J.A.R.V.I.S. è un'applicazione desktop e vocale locale. Non usa un server applicativo o container. La GUI e il programma vocale costruiscono le proprie dipendenze e condividono CommandRouter, servizi e memoria tramite i moduli in src.
+Il repository separa fisicamente le interfacce d'ingresso dal codice applicativo:
 
-~~~mermaid
+```mermaid
 flowchart LR
-    GUI[JarvisGUI: dashboard e chat] --> GUIComposition[GUI composition root]
-    Voice[src/main.py: interfaccia vocale] --> VoiceComposition[Voice composition root]
-    GUIComposition --> Router[CommandRouter]
-    VoiceComposition --> Router
-    Router --> AI[LLMClient]
-    Router --> Actions[Azioni applicative]
-    AI --> Memory[(SQLite)]
-    Actions --> External[Groq, Gmail, RSS, Open-Meteo, Windows]
-    VoiceComposition --> Audio[Microfono e Edge TTS]
-    GUIComposition --> Audio
-~~~
+    GUI[gui/ desktop] --> Composition[src/composition.py]
+    HTTP[api/ HTTP + WebSocket] --> Composition
+    TCP[api/ socket TCP] --> Composition
+    Voice[src/main.py voce] --> Composition
+    Composition --> Router[CommandRouter]
+    Router --> Local[Comandi locali e azioni]
+    Router --> AI[Strategia provider AI]
+    Local --> Store[(SQLite locale)]
+    AI --> Memory[(Memoria SQLite)]
+```
 
-## Struttura dei moduli
+`gui/` gestisce rendering, navigazione, input e aggiornamenti desktop. `api/` traduce richieste HTTP, WebSocket e TCP in chiamate chat. `src/` contiene composizione, logica, provider, azioni, memoria e l'interfaccia vocale. I tre contesti condividono router, servizi e database tramite `src/composition.py`; non duplicano le regole di conversazione.
 
-| Percorso | Responsabilità |
+## Mappa dei moduli
+
+| Percorso | Responsabilit\u00e0 |
 |---|---|
-| src/main.py | Compone AI, router, azioni e interfacce vocali; avvia il ciclo dell'assistente. |
-| src/core/command_router.py | Riconosce i comandi specifici e inoltra le richieste AI generiche. |
-| src/core/text.py | Normalizza testo e accenti per il confronto dei comandi. |
-| src/core/weather.py | Interpreta date e città nelle richieste meteo. |
-| src/actions/system_actions.py | Apre programmi e siti, esegue ricerche e fornisce data/ora; espone la facciata meteo. |
-| src/actions/system_actions_audio.py | Riconosce i comandi audio e controlla il volume master Windows tramite pycaw/COM. |
-| src/actions/weather_actions.py | Rileva la posizione, geocodifica città e interroga Open-Meteo. |
-| src/actions/news_actions.py | Recupera e formatta notizie da feed RSS. |
-| src/actions/email_actions.py | Integra Gmail API per i riepiloghi email e le operazioni email del core tramite OAuth. |
-| src/ai/llm_client.py | Invia richieste a Groq, gestisce contesto conversazionale e memoria dei fatti. |
-| src/interface/ | Acquisisce la voce e riproduce la sintesi vocale. |
-| src/memory/ | Gestisce cronologia e fatti nel database SQLite locale. |
-| JarvisGUI/main.py | Inserisce src nel percorso Python e avvia JarvisApp. |
-| JarvisGUI/services.py | Composition root della GUI: crea i servizi e il CommandRouter condiviso. |
-| JarvisGUI/ui/app.py | Crea la finestra, la navigazione e il ciclo di vita delle viste desktop. |
-| JarvisGUI/ui/dashboard.py | Mostra HUD, orologio e scorciatoie che inviano richieste alla chat. |
-| JarvisGUI/ui/chat_view.py | Gestisce chat, cronologia, input vocale e aggiornamento delle risposte. |
+| `gui/main.py` | Avvio desktop e impostazione dei percorsi d'importazione. |
+| `gui/ui/app.py` | Finestra, navigazione, composizione condivisa e ciclo di vita delle viste. |
+| `gui/ui/chat_view.py` | Conversazione, cronologia persistente, invio asincrono e controlli vocali. |
+| `gui/ui/dashboard.py` | Dashboard e scorciatoie che inviano comandi al router. |
+| `gui/ui/local_tools_view.py` | Routine, promemoria, preferenze e diagnostica. |
+| `api/main.py` | Avvio da terminale dei listener locali e configurazione porte. |
+| `api/bridge.py` | Adattatori HTTP, WebSocket e socket TCP JSON; validazione e serializzazione. |
+| `src/composition.py` | Composition root e dependency injection comune a GUI, API e voce. |
+| `src/core/command_router.py` | Router deterministico dei comandi e coordinamento delle azioni. |
+| `src/core/local_features.py` | Regole e persistenza per attivitÃ , scadenze, routine e preferenze. |
+| `src/core/prompt_budget.py` | Riduzione del contesto conversazionale senza dipendenze tokenizer. |
+| `src/ai/llm_client.py` | Contesto conversazionale e accesso al provider AI scelto. |
+| `src/ai/providers.py` | Strategia Ollama, LM Studio, provider automatico e diagnostica. |
+| `src/actions/` | Integrazioni meteo, notizie, Gmail, sistema operativo e audio. |
+| `src/interface/` | Acquisizione del parlato e sintesi vocale per l'interfaccia vocale. |
+| `src/memory/` | Persistenza locale di conversazioni e fatti in SQLite. |
+| `src/main.py` | Avvio dell'interfaccia vocale da terminale. |
+| `tests/` | Test automatici offline con dipendenze simulate e database temporanei. |
 
-La GUI non ha una vista Gmail dedicata. Il core mantiene il router email per i comandi di riepilogo disponibili dalla chat o dalla voce.
+## Flussi e casi d'uso
 
-## Ingressi e composizione
+1. **Comandi noti e azioni locali**: il router riconosce prima meteo, volume, attivitÃ , routine, notizie, posta e azioni di sistema. Li esegue con servizi deterministici, senza consumare token AI inutilmente.
+2. **Domande generali**: la richiesta non riconosciuta passa a `LLMClient`, che prepara un contesto limitato con cronologia e fatti utili.
+3. **Selezione AI**: modalitÃ  automatica usa Ollama per richieste ordinarie e dati personali; per richieste complesse prova LM Studio locale se disponibile e ripiega su Ollama. I provider cloud sono espliciti e mai scelti automaticamente.
+4. **Routine con effetti**: le routine ammettono solo azioni integrate e richiedono conferma esplicita prima di eseguire i passaggi.
+5. **AI non disponibile**: la diagnostica espone lo stato dei provider; errori di connessione vengono restituiti come errore gestito, senza bloccare il thread grafico.
+6. **Richieste concorrenti**: chat GUI, HTTP, WebSocket e TCP convergono sullo stesso router. `CommandRouter` serializza le transizioni conversazionali e `ChatGateway` protegge il confine d'accesso multi-thread.
+7. **Input API errato o eccessivo**: l'adattatore rifiuta messaggi vuoti, payload non validi e richieste oltre i limiti prima di invocare il core.
+8. **Memoria condivisa**: attivitÃ  e preferenze usano lo store SQLite locale; la memoria conversazionale rende coerente la cronologia tra le interfacce che condividono il processo e il database.
 
-- JarvisGUI/main.py configura il path dei moduli in src e avvia JarvisApp.
-- JarvisGUI/services.py crea LLMClient, EmailActions, NewsActions e le azioni di sistema/audio, quindi li passa a CommandRouter.
-- src/main.py compone gli stessi tipi di servizi e avvia VoiceInput/VoiceOutput.
-- src/voice_assistant.py mantiene compatibilità con il vecchio punto di ingresso e delega al nuovo ciclo.
+Per l'API locale sono disponibili `GET /health`, `POST /api/chat`, `ws://127.0.0.1:8765/ws` e socket TCP JSON per riga su `127.0.0.1:8766`. I listener si legano a loopback. La GUI puÃ² avviare e arrestare il bridge durante il proprio ciclo di vita.
 
-Le dipendenze sono passate al router dal composition root. Questo evita che il router costruisca direttamente API client o widget grafici.
+## Pattern applicati
 
-## Flusso delle richieste
+- **Ports and adapters**: GUI, voce, HTTP, WebSocket e TCP sono adattatori sottili; la logica rimane nel core `src/`.
+- **Composition root e dependency injection**: `create_application()` costruisce servizi e router una volta per processo, consentendo sostituti simulati nei test.
+- **Command/router**: prima si risolvono localmente intenti noti, poi si delega al modello. Questo rende le azioni ripetibili e riduce latenza e token.
+- **Strategy**: il client sceglie provider e modello in base a preferenza e complessitÃ , mantenendo la modalitÃ  automatica locale.
+- **Gateway**: l'API applica limiti, controlla concorrenza e converte gli errori in risposte di trasporto.
+- **Repository/store locale**: le funzionalitÃ  strutturate usano SQLite invece di affidare task e preferenze alla memoria del modello.
+- **Lazy initialization**: integrazioni facoltative, come OAuth Gmail, vengono inizializzate al primo utilizzo.
+- **UI non bloccante**: le operazioni lente devono lavorare su thread worker e tornare al main loop Tk tramite coda/eventi.
 
-1. Chat, microfono o interfaccia testuale passano il testo a CommandRouter.
-2. CommandRouter normalizza il testo e riconosce i comandi specifici per audio, Gmail, news, meteo, data/ora, apertura e ricerca.
-3. Le azioni dirette chiamano il relativo servizio; le richieste generiche arrivano a LLMClient e poi a Groq.
-4. LLMClient usa LongTermMemory e FactsMemory per leggere o aggiornare lo stato conversazionale locale.
-5. Le risposte vengono mostrate nella GUI o nel terminale; VoiceOutput può leggerle ad alta voce.
-6. La chat GUI sincronizza periodicamente le nuove righe della cronologia SQLite, incluse quelle aggiunte dal processo vocale.
+## Persistenza, rete e privacy
 
-## Persistenza e servizi esterni
+- Database: `src/storage/jarvis.db` per cronologia, fatti, promemoria, routine e preferenze.
+- Configurazione locale: `.env` per impostazioni facoltative; credenziali Gmail OAuth in `src/client_secret.json` e `src/token.json`.
+- Ollama e LM Studio eseguono inferenza sul PC. Groq Ã¨ un'opzione cloud scelta esplicitamente.
+- Open-Meteo, feed RSS, Gmail, Google Speech Recognition ed Edge TTS richiedono rete quando usati.
+- API HTTP e socket sono locali per impostazione predefinita. Non esporli direttamente su reti non fidate senza autenticazione e un livello TLS appropriato.
+- Credenziali OAuth, token, `.env` e database personale sono esclusi da Git tramite `.gitignore`.
 
-- src/storage/jarvis.db: cronologia e fatti personali, conservati localmente.
-- .env: variabili locali, inclusa GROQ_API_KEY.
-- src/client_secret.json e src/token.json: credenziali e token OAuth Google per Gmail, se configurato.
-- Groq: conversazione AI e interpretazione di richieste.
-- Google Speech Recognition: trascrizione vocale italiana.
-- Edge TTS: sintesi vocale, con voce italiana configurata nel client.
-- Gmail API: riepilogo dei messaggi non letti su richiesta.
-- Feed RSS: notizie.
-- ipwho.is e Open-Meteo: posizione approssimativa, geocodifica e previsioni.
-- Windows/COM: avvio di programmi e controllo audio.
+Promemoria, routine e preferenze non richiedono servizi a pagamento. Le funzionalitÃ  vocali online e i provider cloud dipendono dai servizi terzi e dai relativi termini/limiti.
 
-Le credenziali, il token OAuth e il database locale sono esclusi dal controllo versione tramite .gitignore. Il testo inviato al modello AI, l'audio inviato al riconoscimento vocale e le richieste rivolte ai provider esterni lasciano il computer.
+## Verifica e avvio
 
-## Pattern e responsabilità
+Dalla radice del progetto:
 
-- **Separazione per responsabilità**: interfacce, router, azioni, client AI e persistenza hanno moduli distinti.
-- **Dependency injection**: CommandRouter riceve i servizi dal composition root.
-- **Facade**: SystemActions espone le azioni desktop e inoltra le richieste meteo a WeatherActions.
-- **Lazy initialization**: l'autenticazione Gmail viene avviata al primo comando email e non all'apertura della GUI.
-- **Condivisione dei servizi**: i due ingressi usano lo stesso router e lo stesso database, mantenendo una cronologia comune.
+```powershell
+python -m unittest discover -s tests -t . -p "test_*.py" -v
+python .\gui\main.py
+python .\api\main.py
+python .\src\main.py
+```
 
-## Avvio e controlli
-
-I comandi di installazione e avvio sono in INSTALLAZIONE.md. L'applicazione è orientata a Windows; il controllo del volume dipende da librerie Windows e l'audio può richiedere dipendenze compatibili con la versione Python installata.
+Vedere [INSTALLAZIONE.md](INSTALLAZIONE.md) per dipendenze e [FUNZIONAMENTO.md](FUNZIONAMENTO.md) per i comandi utente.
