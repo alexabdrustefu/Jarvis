@@ -2,9 +2,19 @@
 
 [Italiano](README.md) | [English](README_EN.md)
 
+[![CI](https://github.com/alexabdrustefu/Jarvis/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/alexabdrustefu/Jarvis/actions/workflows/tests.yml)
+[![Latest release](https://img.shields.io/github/v/release/alexabdrustefu/Jarvis)](https://github.com/alexabdrustefu/Jarvis/releases/latest)
+[![License](https://img.shields.io/github/license/alexabdrustefu/Jarvis)](LICENSE)
+
 A personal Windows assistant built with Python. J.A.R.V.I.S. combines a desktop GUI with a text chat and animated dashboard, a terminal voice interface, weather and news services, Windows actions, and local memory.
 
 > This is a personal prototype inspired by the Iron Man interface. It is not an official Marvel or Disney product.
+
+![Illustrative preview of the J.A.R.V.I.S. desktop chat](docs/media/jarvis-preview.svg)
+
+**Download for Windows:** [installer and portable archive in Releases](https://github.com/alexabdrustefu/Jarvis/releases/latest). Local AI chat requires [Ollama](https://ollama.com/download) and the `qwen3:4b` model; no cloud API key is needed for the rest of the app.
+
+Want to preview the interface? Run `python .\gui\main.py --demo` for a [guided offline demo](docs/DEMO.md), with no keys, accounts, microphone, or network requests.
 
 ## Features
 
@@ -112,6 +122,10 @@ Jarvis/
 - [Features and commands](FUNZIONAMENTO.md)
 - [Architecture and infrastructure](ARCHITETTURA.md)
 - [README in italiano](README.md)
+- [Changelog](CHANGELOG.md)
+- [Guided demo](docs/DEMO.md)
+- [Roadmap](ROADMAP.md)
+- [Contributing](CONTRIBUTING.md)
 
 ## License
 

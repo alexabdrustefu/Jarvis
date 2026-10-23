@@ -34,8 +34,10 @@ ruff check api gui src tests
 
 Non committare `.env`, credenziali OAuth, token, database locali o dump di conversazioni. Usa `.env.example` per documentare le variabili necessarie senza valori segreti.
 
-## Protezione GitHub
+## Protezione GitHub e release
 
-La configurazione pronta da importare è `.github/rulesets/main-protection.json`. In GitHub apri **Settings → Rules → Rulesets → New ruleset → Import a ruleset**, seleziona il file e crea la regola. Protegge solo `main`, richiede una pull request e il controllo `unit-tests`, blocca force push e cancellazioni, richiede la risoluzione dei thread e non concede bypass agli amministratori.
+Le configurazioni sono in `.github/rulesets/main-protection.json` e `.github/rulesets/develop-protection.json`. Entrambi i branch richiedono una pull request e il check `unit-tests`, bloccano cancellazioni e force push e richiedono la risoluzione delle conversazioni. Non sono richieste approvazioni, così il maintainer singolo può integrare il proprio lavoro mantenendo CI e PR obbligatorie. I ruleset sono attivi sul repository GitHub.
 
-Il controllo CI deve aver completato almeno una run prima che GitHub lo possa selezionare come required check. Il nome tecnico del job è `unit-tests`, uguale al contesto richiesto dalla regola. Il numero di approvazioni resta a zero per consentire il merge in un repository con un solo collaboratore; resta obbligatorio il passaggio dalla pull request e dalla CI.
+Per pubblicare una versione, crea un tag `vMAJOR.MINOR.PATCH` su `main`. Il workflow `Windows release` crea l'app desktop, compila l'installer Inno Setup e l'archivio portatile, quindi pubblica gli asset nella GitHub Release.
+
+Le pull request eseguono test e lint. I push ai branch `feature/*`, `fix/*`, `chore/*`, `develop` e `main` verificano anche il packaging Windows, così le dipendenze dinamiche della GUI vengono controllate prima di una release.

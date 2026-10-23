@@ -82,6 +82,16 @@ Dalla radice del repository, con l'ambiente virtuale attivo, avvia la GUI deskto
 python .\gui\main.py
 ~~~
 
+### Installer Windows
+
+Scarica `JARVIS-Setup-*.exe` dalle [release GitHub](https://github.com/alexabdrustefu/Jarvis/releases/latest) e avvialo. L'installer non richiede privilegi amministrativi. Avvia J.A.R.V.I.S. dal menu Start; per la chat AI locale installa Ollama e il modello `qwen3:4b` come descritto sopra.
+
+L'installer distribuito dal progetto non è firmato con un certificato commerciale: Windows può mostrare un avviso SmartScreen. Ogni release include `SHA256SUMS.txt` per verificare che installer e archivio siano integri.
+
+L'installer conserva database, preferenze e credenziali in `%LOCALAPPDATA%\JARVIS`, separati dai file di programma. Per usare Groq, copia `%LOCALAPPDATA%\JARVIS\config.example.env` in `%LOCALAPPDATA%\JARVIS\.env` e aggiungi `GROQ_API_KEY`. Gmail OAuth è facoltativo: posiziona `client_secret.json` nella stessa cartella dati e autorizza l'accesso al primo comando email.
+
+La build portatile `JARVIS-Portable-*.zip` non richiede installazione: estraila in una cartella utente e avvia `JARVIS.exe`. Per configurare Groq dalla build portatile, crea `%LOCALAPPDATA%\JARVIS` se manca e copia `config.example.env` dalla cartella estratta in quella directory rinominandolo `.env`.
+
 Avvia l'assistente vocale da terminale:
 
 ~~~powershell

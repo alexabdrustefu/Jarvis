@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img" aria-labelledby="title desc">
+  <title id="title">J.A.R.V.I.S. desktop interface preview</title>
+  <desc id="desc">Illustrative preview of the dark J.A.R.V.I.S. Windows desktop app, with navigation, chat, local AI status, and a message composer.</desc>
+  <defs>
+    <linearGradient id="background" x2="1" y2="1"><stop stop-color="#080b12"/><stop offset="1" stop-color="#101a2b"/></linearGradient>
+    <linearGradient id="accent" x2="1"><stop stop-color="#e36b35"/><stop offset="1" stop-color="#f2b84b"/></linearGradient>
+    <linearGradient id="assistant" x2="1" y2="1"><stop stop-color="#132238"/><stop offset="1" stop-color="#102a3b"/></linearGradient>
+    <filter id="glow" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="11" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1440" height="900" rx="28" fill="#070a10"/>
+  <rect x="12" y="12" width="1416" height="876" rx="22" fill="url(#background)" stroke="#243247" stroke-width="2"/>
+  <rect x="12" y="12" width="264" height="876" rx="22" fill="#0d1420"/>
+  <path d="M276 12v876" stroke="#243247"/>
+  <text x="42" y="69" fill="#e36b35" font-family="Segoe UI,Arial,sans-serif" font-size="27" font-weight="700" letter-spacing="2">J.A.R.V.I.S.</text>
+  <text x="44" y="95" fill="#7d91ad" font-family="Segoe UI,Arial,sans-serif" font-size="10" letter-spacing="2">PERSONAL AI SYSTEM</text>
+  <text x="40" y="143" fill="#526681" font-family="Consolas,monospace" font-size="11" letter-spacing="1.4">OPERATIONS</text>
+  <rect x="27" y="162" width="232" height="48" rx="10" fill="#1a293b" stroke="#30435c"/>
+  <rect x="27" y="162" width="3" height="48" rx="2" fill="url(#accent)"/>
+  <text x="47" y="192" fill="#f0f6ff" font-family="Segoe UI,Arial,sans-serif" font-size="15">◉  Interfaccia J.A.R.V.I.S.</text>
+  <text x="47" y="246" fill="#bac9dc" font-family="Segoe UI,Arial,sans-serif" font-size="15">⌖  Centro di comando</text>
+  <text x="47" y="293" fill="#bac9dc" font-family="Segoe UI,Arial,sans-serif" font-size="15">◇  Pianificazione</text>
+  <path d="M31 817h224" stroke="#263b56"/>
+  <circle cx="47" cy="849" r="5" fill="#34d399"/>
+  <text x="61" y="853" fill="#34d399" font-family="Consolas,monospace" font-size="11" letter-spacing="1">CORE ACTIVE</text>
+
+  <text x="318" y="61" fill="#67e8f9" font-family="Consolas,monospace" font-size="11" letter-spacing="2">PERSONAL ASSISTANT  /  CHAT</text>
+  <text x="318" y="105" fill="#e6f1ff" font-family="Segoe UI,Arial,sans-serif" font-size="28" font-weight="650">Interfaccia J.A.R.V.I.S.</text>
+  <rect x="1192" y="42" width="190" height="34" rx="17" fill="#10251f" stroke="#1e5949"/>
+  <circle cx="1211" cy="59" r="4" fill="#34d399" filter="url(#glow)"/>
+  <text x="1224" y="63" fill="#8be0c0" font-family="Consolas,monospace" font-size="10" letter-spacing="1">AI LOCALE DISPONIBILE</text>
+  <path d="M318 132h1064" stroke="#25364d"/>
+
+  <rect x="318" y="165" width="1064" height="660" rx="18" fill="#0b111b" stroke="#1c2a3c"/>
+  <text x="351" y="207" fill="#8ba1bd" font-family="Consolas,monospace" font-size="10" letter-spacing="1.6">SESSIONE ATTIVA</text>
+  <text x="1348" y="207" fill="#617591" font-family="Consolas,monospace" font-size="10" text-anchor="end">PRIVACY  ·  MEMORIA LOCALE</text>
+  <path d="M350 226h1000" stroke="#1d2a3a"/>
+
+  <circle cx="376" cy="278" r="16" fill="#183547" stroke="#26758b"/>
+  <text x="376" y="282" fill="#78e2f1" font-family="Consolas,monospace" font-size="9" font-weight="700" text-anchor="middle">J</text>
+  <rect x="407" y="250" width="613" height="94" rx="14" fill="url(#assistant)" stroke="#263e56"/>
+  <text x="429" y="276" fill="#67e8f9" font-family="Consolas,monospace" font-size="10" letter-spacing="1">J.A.R.V.I.S.</text>
+  <text x="429" y="306" fill="#e6f1ff" font-family="Segoe UI,Arial,sans-serif" font-size="15">Buongiorno. Sono operativo e pronto ad aiutarti.</text>
+  <text x="429" y="328" fill="#91a4be" font-family="Segoe UI,Arial,sans-serif" font-size="12">Puoi chiedermi informazioni, promemoria o azioni locali.</text>
+
+  <rect x="837" y="387" width="487" height="74" rx="14" fill="#17253a" stroke="#2a405b"/>
+  <text x="862" y="416" fill="#9eb3cf" font-family="Consolas,monospace" font-size="10" letter-spacing="1">TU</text>
+  <text x="862" y="441" fill="#f2f6fc" font-family="Segoe UI,Arial,sans-serif" font-size="15">Che tempo fa oggi a Milano?</text>
+
+  <circle cx="376" cy="513" r="16" fill="#183547" stroke="#26758b"/>
+  <text x="376" y="517" fill="#78e2f1" font-family="Consolas,monospace" font-size="9" font-weight="700" text-anchor="middle">J</text>
+  <rect x="407" y="486" width="702" height="122" rx="14" fill="url(#assistant)" stroke="#263e56"/>
+  <text x="429" y="512" fill="#67e8f9" font-family="Consolas,monospace" font-size="10" letter-spacing="1">J.A.R.V.I.S.</text>
+  <text x="429" y="543" fill="#e6f1ff" font-family="Segoe UI,Arial,sans-serif" font-size="15">Controllo le previsioni per Milano…</text>
+  <rect x="429" y="560" width="140" height="25" rx="12" fill="#10251f" stroke="#245843"/>
+  <circle cx="444" cy="572" r="3" fill="#34d399"/>
+  <text x="455" y="576" fill="#8be0c0" font-family="Consolas,monospace" font-size="9">Open-Meteo</text>
+
+  <rect x="351" y="727" width="998" height="65" rx="13" fill="#111b2a" stroke="#30435a"/>
+  <text x="376" y="766" fill="#7187a3" font-family="Segoe UI,Arial,sans-serif" font-size="14">Scrivi un messaggio…</text>
+  <rect x="1187" y="739" width="143" height="41" rx="10" fill="url(#accent)"/>
+  <text x="1258" y="764" fill="#111722" font-family="Segoe UI,Arial,sans-serif" font-size="12" font-weight="700" text-anchor="middle">INVIA  ↗</text>
+  <text x="351" y="812" fill="#526681" font-family="Consolas,monospace" font-size="9" letter-spacing="1">CTRL + INVIO PER INVIARE   ·   DETTATURA VOCALE FACOLTATIVA</text>
+</svg>
