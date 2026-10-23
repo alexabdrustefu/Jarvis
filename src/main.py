@@ -2,24 +2,19 @@
 
 import re
 
-from actions.email_actions import EmailActions
-from actions.news_actions import NewsActions
-from actions.system_actions import SystemActions
-from actions.system_actions_audio import SystemActions as AudioSystemActions
-from ai.llm_client import LLMClient
-from core.command_router import CommandRouter
+from composition import create_application
 from interface.voice_input import VoiceInput
 from interface.voice_output import VoiceOutput
 
 
+def build_router():
+    """Backward-compatible voice entry point backed by the shared composition root."""
+    return create_application().router
+
+
 def main() -> None:
-    router = CommandRouter(
-        ai=LLMClient(),
-        email=EmailActions(),
-        news=NewsActions(),
-        system=SystemActions(),
-        audio=AudioSystemActions(),
-    )
+    application = create_application()
+    router = application.router
     listener = VoiceInput()
     speaker = VoiceOutput()
     speaker.speak(
@@ -30,6 +25,11 @@ def main() -> None:
     while True:
         try:
             text = listener.listen()
+            due_reminders = router.local_commands.store.take_due()
+            for _reminder_id, title, _due_at in due_reminders:
+                message = f"Promemoria: {title}."
+                print(f"\nJ.A.R.V.I.S.: {message}")
+                speaker.speak(message)
             if not text:
                 continue
 
