@@ -1,0 +1,48 @@
+name: Segnalazione bug
+description: Segnala un problema riproducibile in J.A.R.V.I.S.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Prima di inviare, rimuovi token, email personali, credenziali e contenuti privati da log e screenshot.
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamento atteso
+      description: Che cosa ti aspettavi accadesse?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamento osservato
+      description: Che cosa è successo? Includi l'errore completo se disponibile, dopo aver rimosso dati sensibili.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Passaggi per riprodurre
+      placeholder: |
+        1. Avvia ...
+        2. Apri ...
+        3. Seleziona ...
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Ambiente
+      description: Versione Python, Windows e provider AI usato (senza chiavi o dati account).
+      placeholder: Python 3.12, Windows 11, Ollama
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Log ripuliti
+      description: Facoltativo. Non inserire chiavi, token, email o contenuti privati.
+      render: text
+    validations:
+      required: false
