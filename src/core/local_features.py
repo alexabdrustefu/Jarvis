@@ -162,7 +162,8 @@ def parse_reminder(text, now=None):
     else:
         m = re.search(r"\s+(?:tra|fra)\s+(\d+)\s+(minut[oi]|or[ae]|giorn[oi])\s*$", raw, re.I)
     if m:
-        amount = int(m.group(1)); unit = m.group(2).casefold()
+        amount = int(m.group(1))
+        unit = m.group(2).casefold()
         delta = timedelta(minutes=amount) if unit.startswith("minut") else timedelta(hours=amount) if unit.startswith("or") else timedelta(days=amount)
         due, title = now + delta, raw[:m.start()]
     else:
@@ -174,7 +175,8 @@ def parse_reminder(text, now=None):
             due, title = datetime.combine(day, datetime.min.time()).replace(hour=hour, minute=minute), raw[:m.start()]
         elif explicit:
             due = now.replace(hour=int(explicit.group(1)), minute=int(explicit.group(2) or 0), second=0, microsecond=0)
-            if due <= now: due += timedelta(days=1)
+            if due <= now:
+                due += timedelta(days=1)
             title = raw[:explicit.start()]
     return title.strip(" .,!"), due
 
@@ -197,12 +199,15 @@ class LocalCommandService:
             rows = self.store.list_reminders()
             return "Non hai attività aperte." if not rows else "Attività aperte:\n" + "\n".join(self._format_reminder(r) for r in rows)
         m = re.match(r"^(?:completa|segna completato)\s+(?:promemoria\s+)?(\d+)$", normalized)
-        if m: return "Attività completata." if self.store.complete_reminder(m.group(1)) else "Non trovo quell'attività aperta."
+        if m:
+            return "Attività completata." if self.store.complete_reminder(m.group(1)) else "Non trovo quell'attività aperta."
         m = re.match(r"^elimina\s+(?:promemoria\s+)?(\d+)$", normalized)
-        if m: return "Attività eliminata." if self.store.delete_reminder(m.group(1)) else "Non trovo quell'attività."
+        if m:
+            return "Attività eliminata." if self.store.delete_reminder(m.group(1)) else "Non trovo quell'attività."
         if normalized.startswith(("ricordami di ", "aggiungi attività ", "aggiungi attivita ")):
             title, due = parse_reminder(text, self.clock())
-            if not title: return "Dimmi cosa devo ricordarti."
+            if not title:
+                return "Dimmi cosa devo ricordarti."
             ident = self.store.add_reminder(title, due)
             return f"Attività {ident} salvata" + (f" per {due:%d/%m alle %H:%M}." if due else ".")
         routines = self.store.list_routines()
@@ -222,9 +227,14 @@ class LocalCommandService:
         name, steps = routine
         output = []
         for step in steps:
-            if step == "weather": output.append(actions.system.get_weather_for_date(datetime.now().date(), None))
-            elif step == "news": output.append(actions.news.get_daily_news_summary())
-            elif step == "time": output.append(actions.system.get_time())
-            elif step == "volume_down": output.append(actions.audio.adjust_volume("abbassa volume"))
-            elif step == "open_browser": output.append(actions.system.open_website("google"))
+            if step == "weather":
+                output.append(actions.system.get_weather_for_date(datetime.now().date(), None))
+            elif step == "news":
+                output.append(actions.news.get_daily_news_summary())
+            elif step == "time":
+                output.append(actions.system.get_time())
+            elif step == "volume_down":
+                output.append(actions.audio.adjust_volume("abbassa volume"))
+            elif step == "open_browser":
+                output.append(actions.system.open_website("google"))
         return f"Routine {name} completata. " + " ".join(output)
