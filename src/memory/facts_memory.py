@@ -96,3 +96,7 @@ class FactsMemory:
                 (key.strip(),),
             )
             return cursor.rowcount > 0
+
+    def count(self):
+        with self._connection() as connection:
+            return connection.execute("SELECT COUNT(*) FROM facts").fetchone()[0]

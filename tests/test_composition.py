@@ -12,6 +12,11 @@ class FakeAI:
     provider_preference = "auto"
 
 
+class FalseyDependency:
+    def __bool__(self):
+        return False
+
+
 class CompositionTests(unittest.TestCase):
     def test_all_interfaces_receive_one_shared_router_and_store(self):
         store = FakeStore()
@@ -30,6 +35,16 @@ class CompositionTests(unittest.TestCase):
         self.assertIs(application.router.system, system)
         self.assertIs(application.router.audio, audio)
         self.assertEqual(ai.provider_preference, "lmstudio")
+
+    def test_explicit_falsey_dependencies_are_not_replaced(self):
+        store = FakeStore()
+        ai = FakeAI()
+        email, news = FalseyDependency(), FalseyDependency()
+
+        application = create_application(store=store, ai=ai, email=email, news=news)
+
+        self.assertIs(application.router.email, email)
+        self.assertIs(application.router.news, news)
 
 
 if __name__ == "__main__":

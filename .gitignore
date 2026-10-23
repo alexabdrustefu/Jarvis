@@ -20,6 +20,7 @@ __pycache__/
 
 # Local application data and databases.
 *.db
+*.db-*
 *.sqlite
 *.sqlite3
 src/interface/temp_voice.mp3

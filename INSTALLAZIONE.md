@@ -104,6 +104,8 @@ Dalla GUI apri **Pianificazione** e avvia il bridge locale, oppure esegui:
 python .\api\main.py
 ~~~
 
+L'avvio apre automaticamente Swagger UI nel browser su `http://127.0.0.1:8765/docs`; lo schema OpenAPI è disponibile su `/openapi.json`. Per avviare senza aprire il browser usa `python .\api\main.py --no-browser`.
+
 - `GET http://127.0.0.1:8765/health` restituisce lo stato.
 - `POST http://127.0.0.1:8765/api/chat` riceve `{"message":"Ciao"}` e restituisce `{"reply":"..."}`.
 - WebSocket `ws://127.0.0.1:8765/ws` scambia gli stessi oggetti JSON ed è pronto per un client JavaScript nel browser.

@@ -45,7 +45,7 @@ Avvia dalla GUI con **Avvia bridge per web**, oppure dalla radice del progetto:
 python .\api\main.py
 ~~~
 
-Invia una richiesta a `POST http://127.0.0.1:8765/api/chat` con JSON `{"message":"Ciao"}`. `GET /health` mostra lo stato. Un client browser può collegarsi a `ws://127.0.0.1:8765/ws`; socket TCP `127.0.0.1:8766` scambia una richiesta e una risposta JSON per riga. Tutti usano lo stesso router della GUI e ascoltano solo sul PC locale.
+Swagger UI si apre automaticamente all'avvio terminale su `http://127.0.0.1:8765/docs` (`--no-browser` disabilita l'apertura) e lo schema OpenAPI è su `/openapi.json`. La REST API v1 espone `GET /api/v1/menu` per scoprire le funzioni e i link, `GET /api/v1/health`, `POST /api/v1/chat`, `GET/POST /api/v1/reminders`, `PATCH/DELETE /api/v1/reminders/{id}`, `GET /api/v1/routines` e `GET /api/v1/stats`. Le statistiche sono aggregate e non contengono testi della chat o valori dei fatti personali. Restano compatibili `POST /api/chat`, `GET /health`, WebSocket `ws://127.0.0.1:8765/ws` e socket TCP JSON per riga su `127.0.0.1:8766`. Tutti usano lo stesso router e ascoltano solo sul PC locale.
 
 ### Assistente vocale
 

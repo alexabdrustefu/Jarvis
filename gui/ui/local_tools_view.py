@@ -1,13 +1,15 @@
 """Local reminders, routines and system diagnostics."""
 
-import importlib.util
 import os
+import threading
 from datetime import datetime
+from queue import Empty, Queue
 
 import customtkinter as ctk
 from tkinter import messagebox
 
 from core.local_features import parse_reminder
+from gui.services.diagnostics import collect_diagnostics
 
 
 class LocalToolsView(ctk.CTkFrame):
@@ -16,6 +18,11 @@ class LocalToolsView(ctk.CTkFrame):
         self.store, self.on_command, self.microphone = store, on_command, microphone
         self.router = router
         self.bridge = None
+        self._diagnostics_queue = Queue()
+        self._diagnostics_running = False
+        self._diagnostics_pending = False
+        self._diagnostics_poll_id = None
+        self._closed = False
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(0, weight=1)
         self.body = ctk.CTkScrollableFrame(self, fg_color="transparent", corner_radius=0)
@@ -221,38 +228,61 @@ class LocalToolsView(ctk.CTkFrame):
         if not self.router:
             return
         try:
-            from api.bridge import LocalBridge
-            self.bridge = LocalBridge(self.router)
+            from api.bootstrap import create_local_bridge
+            self.bridge = create_local_bridge(self.router)
             self.bridge.start()
             self.bridge_button.configure(text="Arresta bridge locale")
         except OSError as error:
             messagebox.showerror("Bridge locale", f"Non riesco ad aprire le porte locali: {error}", parent=self)
 
     def on_close(self):
+        self._closed = True
+        if self._diagnostics_poll_id is not None:
+            try:
+                self.after_cancel(self._diagnostics_poll_id)
+            except Exception:
+                pass
+            self._diagnostics_poll_id = None
         if self.bridge is not None:
             self.bridge.stop()
             self.bridge = None
 
     def run_diagnostics(self):
+        if self._closed:
+            return
+        if self._diagnostics_running:
+            self._diagnostics_pending = True
+            return
+        self._diagnostics_running = True
+        self.diagnostics.configure(text="Controllo database, provider e dispositivi…")
+
+        def collect():
+            try:
+                result = collect_diagnostics(
+                    self.store, self.router, self.microphone,
+                    groq_configured=bool(os.getenv("GROQ_API_KEY")),
+                )
+            except Exception as error:
+                result = [f"Diagnostica non disponibile: {error}"]
+            self._diagnostics_queue.put(result)
+
+        threading.Thread(target=collect, name="jarvis-diagnostics", daemon=True).start()
+        self._poll_diagnostics()
+
+    def _poll_diagnostics(self):
+        self._diagnostics_poll_id = None
+        if self._closed or not self.winfo_exists():
+            return
         try:
-            with self.store._connection() as db:
-                db.execute("SELECT 1").fetchone()
-            database_status = "OK"
-        except Exception:
-            database_status = "non accessibile"
-        llm_status = self.router.ai.provider_status() if self.router and hasattr(self.router.ai, "provider_status") else {}
-        ollama = llm_status.get("ollama_available", False)
-        checks = [f"SQLite locale: {database_status}",
-                  f"Ollama {llm_status.get('ollama_model', 'qwen3:4b')}: {'pronto' if ollama else 'non avviato / modello assente'}",
-                  f"LM Studio: {'pronto' if llm_status.get('lmstudio_available') else 'server locale non avviato'}",
-                  f"Groq opzionale: {'chiave configurata' if os.getenv('GROQ_API_KEY') else 'non configurato'}",
-                  f"Lettura vocale: {'OK' if importlib.util.find_spec('edge_tts') and importlib.util.find_spec('playsound') else 'dipendenze mancanti'}"]
-        try:
-            names = self.microphone.list_microphone_names() if self.microphone else []
-            checks.append(f"Microfono: {'OK (' + str(len(names)) + ')' if names else 'non rilevato'}")
-        except Exception:
-            checks.append("Microfono: non disponibile o permesso mancante")
-        self.diagnostics.configure(text="\n".join(checks))
+            result = self._diagnostics_queue.get_nowait()
+        except Empty:
+            self._diagnostics_poll_id = self.after(100, self._poll_diagnostics)
+            return
+        self._diagnostics_running = False
+        self.diagnostics.configure(text="\n".join(result))
+        if self._diagnostics_pending:
+            self._diagnostics_pending = False
+            self.run_diagnostics()
 
     def refresh(self):
         for child in self.reminder_list.winfo_children():

@@ -3,9 +3,14 @@ import os
 import socket
 import threading
 import unittest
+import tempfile
+from pathlib import Path
+from types import SimpleNamespace
 from urllib.request import Request, urlopen
 
 from api.bridge import ChatGateway, LocalBridge, make_http_server, make_socket_server
+from api.infrastructure.telemetry_repository import SqliteTelemetryRepository
+from core.local_features import LocalStore
 
 
 class FakeRouter:
@@ -15,6 +20,25 @@ class FakeRouter:
     def handle(self, message):
         self.received.append(message)
         return "Ricevuto: " + message
+
+
+class FakeMemory:
+    def get_statistics(self):
+        return {"messages_total": 12, "messages_today": 3}
+
+
+class FakeFacts:
+    def count(self):
+        return 2
+
+
+class FakeAI:
+    memory = FakeMemory()
+    facts = FakeFacts()
+    last_provider = "ollama"
+
+    def provider_status(self):
+        return {"ollama_available": True}
 
 
 class ApiBridgeTests(unittest.TestCase):
@@ -107,6 +131,53 @@ class ApiBridgeTests(unittest.TestCase):
             server.shutdown()
             server.server_close()
             thread.join(timeout=2)
+
+    def test_swagger_openapi_menu_stats_and_reminder_resources(self):
+        with tempfile.TemporaryDirectory() as folder:
+            store = LocalStore(Path(folder) / "jarvis.db")
+            store.save_routine("Lavoro", ["time"])
+            application = SimpleNamespace(router=FakeRouter(), store=store, ai=FakeAI())
+            telemetry = SqliteTelemetryRepository(Path(folder) / "telemetry.db")
+            server = make_http_server(ChatGateway(application, telemetry), port=0)
+            thread = threading.Thread(target=server.serve_forever, daemon=True)
+            thread.start()
+            root = f"http://127.0.0.1:{server.server_port}"
+
+            def request(method, path, payload=None):
+                data = json.dumps(payload).encode() if payload is not None else None
+                req = Request(root + path, data=data, method=method,
+                              headers={"Content-Type": "application/json"})
+                with urlopen(req, timeout=3) as response:
+                    return response.status, json.loads(response.read().decode())
+
+            try:
+                with urlopen(root + "/docs", timeout=3) as response:
+                    self.assertIn(b"swagger-ui", response.read())
+                _, spec = request("GET", "/openapi.json")
+                self.assertEqual(spec["openapi"], "3.0.3")
+                _, menu = request("GET", "/api/v1/menu")
+                self.assertIn("reminders", {item["id"] for item in menu["items"]})
+                _, created = request("POST", "/api/v1/reminders", {"title": "Test API"})
+                self.assertEqual(created["status"], "pending")
+                _, pending = request("GET", "/api/v1/reminders")
+                self.assertEqual(len(pending["items"]), 1)
+                _, completed = request("PATCH", f"/api/v1/reminders/{created['id']}", {"status": "done"})
+                self.assertEqual(completed["status"], "done")
+                _, done = request("GET", "/api/v1/reminders?include_done=true")
+                self.assertEqual(done["items"][0]["status"], "done")
+                _, routines = request("GET", "/api/v1/routines")
+                self.assertEqual(routines["items"][0]["name"], "Lavoro")
+                _, stats = request("GET", "/api/v1/stats")
+                self.assertEqual(stats["conversations"]["messages_total"], 12)
+                self.assertEqual(stats["productivity"]["reminders_completed"], 1)
+                self.assertGreater(stats["api"]["requests_total"], 0)
+                self.assertIn("/api/v1/menu", {item["route"] for item in stats["api"]["by_route"]})
+                _, deleted = request("DELETE", f"/api/v1/reminders/{created['id']}")
+                self.assertTrue(deleted["deleted"])
+            finally:
+                server.shutdown()
+                server.server_close()
+                thread.join(timeout=2)
 
 
 if __name__ == "__main__":

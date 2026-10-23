@@ -44,7 +44,7 @@ Start the GUI:
 python .\gui\main.py
 ```
 
-Choose **Automatic**, **Ollama**, **LM Studio**, or **Optional Groq** in Planning. To enable LM Studio, start its local server on port 1234 and load a model. Groq is used only when explicitly selected. The bridge can be started in Planning or with `python .\api\main.py`. HTTP chat uses `POST http://127.0.0.1:8765/api/chat`; browsers can use `ws://127.0.0.1:8765/ws`; newline-delimited TCP JSON is available on port 8766. All listeners are loopback only.
+Choose **Automatic**, **Ollama**, **LM Studio**, or **Optional Groq** in Planning. To enable LM Studio, start its local server on port 1234 and load a model. Groq is used only when explicitly selected. The bridge can be started in Planning or with `python .\api\main.py`; the terminal command opens Swagger UI automatically (`--no-browser` disables it). Swagger UI is at `http://127.0.0.1:8765/docs` and the OpenAPI schema at `/openapi.json`. REST v1 includes chat, a discoverable feature menu, aggregate statistics, reminders, and routines; the legacy chat route, WebSocket, and newline-delimited TCP socket remain available. All listeners are loopback only.
 
 Start the terminal voice assistant with:
 

@@ -39,6 +39,11 @@ class LocalStore:
     def _connect(self):
         return sqlite3.connect(self.db_path, timeout=5)
 
+    def health_check(self):
+        with self._connection() as db:
+            db.execute("SELECT 1").fetchone()
+        return True
+
     @contextmanager
     def _connection(self):
         db = self._connect()
@@ -103,6 +108,25 @@ class LocalStore:
     def delete_routine(self, name):
         with self._connection() as db:
             return db.execute("DELETE FROM routines WHERE name=?", (name,)).rowcount > 0
+
+    def get_statistics(self):
+        """Return aggregate task counts without exposing reminder contents."""
+        now = datetime.now().isoformat(timespec="minutes")
+        with self._connection() as db:
+            row = db.execute("""
+                SELECT
+                    SUM(CASE WHEN status='pending' THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN status='pending' AND due_at IS NOT NULL AND due_at<=? THEN 1 ELSE 0 END),
+                    SUM(CASE WHEN status='done' THEN 1 ELSE 0 END),
+                    (SELECT COUNT(*) FROM routines)
+                FROM reminders
+            """, (now,)).fetchone()
+        return {
+            "reminders_pending": row[0] or 0,
+            "reminders_overdue": row[1] or 0,
+            "reminders_completed": row[2] or 0,
+            "routines": row[3] or 0,
+        }
 
     def get_preferences(self):
         defaults = {"voice_replies": False, "speech_rate": "normal", "voice": "it-IT-IsabellaNeural", "location": "", "llm_provider": "auto"}

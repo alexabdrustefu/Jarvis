@@ -117,6 +117,15 @@ class LongTermMemory:
             for row_id, role, content, created_at in rows
         ]
 
+    def get_statistics(self):
+        """Return aggregate conversation counts, with no message content."""
+        with self._connection() as connection:
+            total, today = connection.execute("""
+                SELECT COUNT(*), SUM(CASE WHEN date(created_at)=date('now') THEN 1 ELSE 0 END)
+                FROM messages
+            """).fetchone()
+        return {"messages_total": total or 0, "messages_today": today or 0}
+
     def clear(self):
         with self._connection() as connection:
             connection.execute("DELETE FROM messages")

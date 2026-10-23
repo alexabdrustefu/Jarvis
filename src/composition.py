@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 from actions.email_actions import EmailActions
 from actions.news_actions import NewsActions
@@ -19,6 +20,7 @@ class Application:
 
     router: CommandRouter
     store: LocalStore
+    ai: Any
 
 
 def create_application(
@@ -35,20 +37,20 @@ def create_application(
     Optional dependencies make the composition root straightforward to test
     without starting microphones, online clients, or the real SQLite store.
     """
-    local_store = store or LocalStore()
-    ai_service = ai or LLMClient()
+    local_store = store if store is not None else LocalStore()
+    ai_service = ai if ai is not None else LLMClient()
     if hasattr(ai_service, "provider_preference"):
         ai_service.provider_preference = local_store.get_preferences().get("llm_provider", "auto")
 
     router = CommandRouter(
         ai=ai_service,
-        email=email or EmailActions(),
-        news=news or NewsActions(),
-        system=system or SystemActions(),
-        audio=audio or AudioSystemActions(),
+        email=email if email is not None else EmailActions(),
+        news=news if news is not None else NewsActions(),
+        system=system if system is not None else SystemActions(),
+        audio=audio if audio is not None else AudioSystemActions(),
         local_commands=LocalCommandService(local_store),
     )
-    return Application(router=router, store=local_store)
+    return Application(router=router, store=local_store, ai=ai_service)
 
 
 def create_command_router(**dependencies) -> CommandRouter:

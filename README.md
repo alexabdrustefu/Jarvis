@@ -50,7 +50,7 @@ Per abilitare API HTTP e socket dalla GUI, apri **Pianificazione** e seleziona *
 python .\api\main.py
 ```
 
-HTTP: `POST http://127.0.0.1:8765/api/chat` con JSON `{"message":"Ciao"}`; stato: `GET /health`. Per un client web usa WebSocket `ws://127.0.0.1:8765/ws`, inviando e ricevendo oggetti JSON `{ "message": "..." }` e `{ "reply": "..." }`. È disponibile anche socket TCP JSON su `127.0.0.1:8766`, una richiesta per riga. I listener sono locali al PC.
+L'avvio da terminale apre Swagger UI automaticamente su `http://127.0.0.1:8765/docs` (`--no-browser` per evitarlo); lo schema OpenAPI è su `/openapi.json`. La REST API versionata include `POST /api/v1/chat`, menu navigabile `GET /api/v1/menu`, statistiche aggregate `GET /api/v1/stats`, promemoria CRUD `/api/v1/reminders` e lista routine `GET /api/v1/routines`. Restano compatibili anche `POST /api/chat`, `GET /health`, WebSocket `ws://127.0.0.1:8765/ws` e socket TCP JSON per riga su `127.0.0.1:8766`. I listener sono locali al PC.
 
 ```javascript
 const chat = new WebSocket("ws://127.0.0.1:8765/ws");
