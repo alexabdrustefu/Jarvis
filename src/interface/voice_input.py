@@ -1,16 +1,22 @@
 
-import speech_recognition as sr
+try:
+    import speech_recognition as sr
+except ImportError:
+    sr = None
 
 
 class VoiceInput:
     """Acquisisce la voce dal microfono e la converte in testo."""
 
     def __init__(self, language="it-IT"):
-        self.recognizer = sr.Recognizer()
+        self.recognizer = sr.Recognizer() if sr else None
+        self.Microphone = sr.Microphone if sr else None
         self.language = language
 
     def listen(self):
         """Ascolta una frase e restituisce il testo riconosciuto."""
+        if sr is None:
+            raise RuntimeError("speech_recognition non è installato.")
         with sr.Microphone() as source:
             print("JARVIS: Ti ascolto...")
             self.recognizer.adjust_for_ambient_noise(

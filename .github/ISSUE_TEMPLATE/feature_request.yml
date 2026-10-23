@@ -1,0 +1,25 @@
+name: Richiesta funzionalità
+description: Proponi un miglioramento o una nuova capacità.
+title: "feature: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Esigenza
+      description: Quale problema o attività vuoi risolvere?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Soluzione proposta
+      description: Descrivi il comportamento che vorresti.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternative considerate
+      description: Facoltativo.
+    validations:
+      required: false

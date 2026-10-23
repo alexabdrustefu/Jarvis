@@ -1,4 +1,9 @@
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
 from ai.llm_client import LLMClient
 from memory.facts_memory import FactsMemory
 

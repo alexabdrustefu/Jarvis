@@ -1,5 +1,6 @@
 
 import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
 
 DEFAULT_DB = (
@@ -23,8 +24,17 @@ class LongTermMemory:
     def _connect(self):
         return sqlite3.connect(self.db_path)
 
+    @contextmanager
+    def _connection(self):
+        connection = self._connect()
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+
     def _initialize(self):
-        with self._connect() as connection:
+        with self._connection() as connection:
             connection.execute("""
                 CREATE TABLE IF NOT EXISTS messages (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -40,7 +50,7 @@ class LongTermMemory:
         if role not in {"user", "assistant"}:
             raise ValueError("Ruolo non valido")
 
-        with self._connect() as connection:
+        with self._connection() as connection:
             connection.execute(
                 "INSERT INTO messages (role, content) VALUES (?, ?)",
                 (role, content),
@@ -50,7 +60,7 @@ class LongTermMemory:
         if limit < 1:
             raise ValueError("Il limite deve essere positivo")
 
-        with self._connect() as connection:
+        with self._connection() as connection:
             rows = connection.execute(
                 """
                 SELECT role, content
@@ -73,7 +83,7 @@ class LongTermMemory:
         if limit < 1:
             raise ValueError("Il limite deve essere positivo")
 
-        with self._connect() as connection:
+        with self._connection() as connection:
             rows = connection.execute(
                 """
                 SELECT role, content, created_at, id
@@ -92,7 +102,7 @@ class LongTermMemory:
 
     def get_messages_after_id(self, message_id: int):
         """Read newly added messages for another live interface, in order."""
-        with self._connect() as connection:
+        with self._connection() as connection:
             rows = connection.execute(
                 """
                 SELECT id, role, content, created_at
@@ -107,6 +117,15 @@ class LongTermMemory:
             for row_id, role, content, created_at in rows
         ]
 
+    def get_statistics(self):
+        """Return aggregate conversation counts, with no message content."""
+        with self._connection() as connection:
+            total, today = connection.execute("""
+                SELECT COUNT(*), SUM(CASE WHEN date(created_at)=date('now') THEN 1 ELSE 0 END)
+                FROM messages
+            """).fetchone()
+        return {"messages_total": total or 0, "messages_today": today or 0}
+
     def clear(self):
-        with self._connect() as connection:
+        with self._connection() as connection:
             connection.execute("DELETE FROM messages")

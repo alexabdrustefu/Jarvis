@@ -1,8 +1,26 @@
+# Local environment files; keep only the safe template in Git.
 .env
+.env.*
+!.env.example
 .venv/
 __pycache__/
 *.py[cod]
-src/client_secret.json
-src/token.json
-src/storage/jarvis.db
+
+# OAuth credentials, access tokens, and private key material.
+**/client_secret*.json
+**/credentials*.json
+**/token*.json
+**/*_secret*.json
+**/secrets/**
+**/.secrets/**
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local application data and databases.
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
 src/interface/temp_voice.mp3
