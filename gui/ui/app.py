@@ -1,5 +1,8 @@
 """Desktop application shell and navigation."""
 
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 import customtkinter as ctk
 
 from interface.voice_input import VoiceInput
@@ -18,13 +21,30 @@ class JarvisApp:
     TEXT = "#E6F1FF"
     MUTED = "#91A4BE"
 
-    def __init__(self):
+    def __init__(self, demo_mode=False):
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("blue")
-        application = create_application()
+        self.demo_mode = demo_mode
+        self._demo_directory = None
+        if demo_mode:
+            self._demo_directory = TemporaryDirectory(prefix="jarvis-demo-")
+            database = Path(self._demo_directory.name) / "demo.db"
+            from core.local_features import LocalStore
+            from demo import DemoAI, DemoAudio, DemoEmail, DemoNews, DemoSystem
+
+            application = create_application(
+                store=LocalStore(database),
+                ai=DemoAI(database),
+                email=DemoEmail(),
+                news=DemoNews(),
+                system=DemoSystem(),
+                audio=DemoAudio(),
+            )
+        else:
+            application = create_application()
         self.router = application.router
-        self.voice_input = VoiceInput()
-        self.voice_output = VoiceOutput()
+        self.voice_input = None if demo_mode else VoiceInput()
+        self.voice_output = None if demo_mode else VoiceOutput()
         self.local_store = application.store
         preferences = self.local_store.get_preferences()
         self.voice_output.voice = preferences.get("voice", self.voice_output.voice)
@@ -32,7 +52,8 @@ class JarvisApp:
         self._page_views = {}
         self._active_page = None
         self.root = ctk.CTk()
-        self.root.title("J.A.R.V.I.S. | Personal AI")
+        suffix = " | Offline Demo" if demo_mode else " | Personal AI"
+        self.root.title("J.A.R.V.I.S." + suffix)
         self.root.geometry("1180x760")
         self.root.minsize(960, 640)
         self.root.configure(fg_color=self.BG)
@@ -98,8 +119,10 @@ class JarvisApp:
             2, 2, 10, 10, fill="#34D399", outline="",
         )
         ctk.CTkLabel(
-            status, text="CORE ACTIVE", font=("Consolas", 10, "bold"),
-            text_color="#34D399",
+            status,
+            text="DEMO · OFFLINE" if self.demo_mode else "CORE ACTIVE",
+            font=("Consolas", 10, "bold"),
+            text_color=self.CYAN if self.demo_mode else "#34D399",
         ).pack(side="left")
         self._pulse_status()
         ctk.CTkLabel(
@@ -145,7 +168,7 @@ class JarvisApp:
         self._show("local_tools", lambda parent: LocalToolsView(
             parent, self.local_store,
             on_command=lambda command: self.show_chat(command),
-            microphone=self.voice_input.Microphone,
+            microphone=self.voice_input.Microphone if self.voice_input else None,
             router=self.router,
         ))
 
@@ -156,8 +179,8 @@ class JarvisApp:
             lambda parent: ChatView(
                 parent,
                 self.router.handle,
-                listen=self.voice_input.listen,
-                speak=self.voice_output.speak,
+                listen=self.voice_input.listen if self.voice_input else None,
+                speak=self.voice_output.speak if self.voice_output else None,
                 clear_history=self.router.ai.clear_history,
                 load_history=self.router.ai.memory.get_recent_messages_with_timestamps,
                 load_after=self.router.ai.memory.get_messages_after_id,
@@ -167,8 +190,9 @@ class JarvisApp:
         )
         chat.set_speak_enabled(self.local_store.get_preferences()["voice_replies"])
         preferences = self.local_store.get_preferences()
-        self.voice_output.voice = preferences.get("voice", self.voice_output.voice)
-        self.voice_output.rate = preferences.get("speech_rate", "+0%")
+        if self.voice_output:
+            self.voice_output.voice = preferences.get("voice", self.voice_output.voice)
+            self.voice_output.rate = preferences.get("speech_rate", "+0%")
         if initial_message:
             chat.send_message(initial_message)
 
@@ -187,6 +211,11 @@ class JarvisApp:
         except Exception:
             pass
         self.root.destroy()
+        if self._demo_directory is not None:
+            try:
+                self._demo_directory.cleanup()
+            except OSError:
+                pass
 
     def _poll_reminders(self):
         if not self.root.winfo_exists():
