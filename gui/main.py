@@ -9,10 +9,9 @@ for import_root in (SRC_ROOT, PROJECT_ROOT):
     if str(import_root) not in sys.path:
         sys.path.insert(0, str(import_root))
 
-from gui.ui.app import JarvisApp
-
-
 def main() -> None:
+    from gui.ui.app import JarvisApp
+
     JarvisApp().run()
 
 
