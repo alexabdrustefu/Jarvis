@@ -3,7 +3,7 @@ groq
 SpeechRecognition
 PyAudio
 edge-tts
-playsound==1.2.2
+playsound==1.3.0
 feedparser
 pycaw
 comtypes
